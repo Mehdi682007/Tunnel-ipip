@@ -180,7 +180,7 @@ install_or_update_tunnel() {
   echo "-----------------------------------"
   echo
   echo "Which server is this?"
-  echo "  1) 🌍🌐✅ Foreign server"
+  echo "  1) 🌍🌐✅ KHAREJ server"
   echo "  2) 🟢⚪️🔴 Iran server"
   read -rp "Choose your role [1-2]: " ROLE_CHOICE
 
