@@ -1,7 +1,6 @@
 #!/bin/bash
-set -e
 
-# IPv6 sit + ipip6 tunnel manager installer
+# IPv6 sit + ipip6 Tunnel Manager 😎
 # Single Iran <-> Foreign tunnel + persistent port forwarding
 
 SERVICE_NAME="tunnel-setup.service"
@@ -9,13 +8,14 @@ SCRIPT_PATH="/usr/local/bin/tunnel-setup.sh"
 CONFIG_DIR="/etc/tunnel-manager"
 CONFIG_FILE="${CONFIG_DIR}/config"
 
-# Colors (safe, مینیمال)
+# Colors & styles
 BOLD="\e[1m"
 RESET="\e[0m"
 GREEN="\e[32m"
 RED="\e[31m"
 YELLOW="\e[33m"
 CYAN="\e[36m"
+MAGENTA="\e[35m"
 GRAY="\e[90m"
 
 CHECK="✅"
@@ -43,6 +43,21 @@ detect_local_ip() {
 
 print_banner() {
   clear
+  # ASCII لوگو – اگر ترمینال کوچیک باشه فقط ممکنه wrap بشه، ولی خراب نمی‌کنه
+  echo -e "${MAGENTA}"
+  cat << 'EOF'
+ _______                                _______   __            __    __                __  __        ______  _______  ______  _______  
+|       \                              |       \ |  \          |  \  |  \              |  \|  \      |      \|       \|      \|       \ 
+| $$$$$$$\ ______    ______    _______ | $$$$$$$\ \$$  ______   \$$ _| $$_     ______  | $$| $$       \$$$$$$| $$$$$$$\\$$$$$$| $$$$$$$\
+| $$__/ $$|      \  /      \  /       \| $$  | $$|  \ /      \ |  \|   $$ \   |      \ | $$| $$        | $$  | $$__/ $$ | $$  | $$__/ $$
+| $$    $$ \$$$$$$\|  $$$$$$\|  $$$$$$$| $$  | $$| $$|  $$$$$$\| $$ \$$$$$$    \$$$$$$\| $$| $$        | $$  | $$    $$ | $$  | $$    $$
+| $$$$$$$ /      $$| $$   \$$ \$$    \ | $$  | $$| $$| $$  | $$| $$  | $$ __  /      $$| $$| $$        | $$  | $$$$$$$  | $$  | $$$$$$$ 
+| $$     |  $$$$$$$| $$       _\$$$$$$\| $$__/ $$| $$| $$__| $$| $$  | $$|  \|  $$$$$$$| $$| $$       _| $$_ | $$      _| $$_ | $$      
+| $$      \$$    $$| $$      |       $$| $$    $$| $$ \$$    $$| $$   \$$  $$ \$$    $$| $$| $$      |   $$ \| $$     |   $$ \| $$      
+ \$$       \$$$$$$$ \$$       \$$$$$$$  \$$$$$$$  \$$ _\$$$$$$$ \$$    \$$$$   \$$$$$$$ \$$ \$$       \$$$$$$ \$$      \$$$$$$ \$$      
+
+EOF
+  echo -e "${RESET}"
   echo -e "${BOLD}${CYAN}Tunnel Manager v1.0${RESET}"
   echo -e "${GRAY}YouTube: youtube.com/@PARSDIGITAL   GitHub: github.com/Mehdi682007${RESET}"
   echo
@@ -75,17 +90,11 @@ ip link set ip6PD_tun mtu 1440
 ip link set ip6PD_tun up
 EOF
 
-  # Extra bits only for Iran server
   if [[ "$ROLE" == "iran" ]]; then
-    # enable ip_forward
     cat >> "$SCRIPT_PATH" <<EOF
 
 # Enable IPv4 forwarding
 sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 || true
-EOF
-
-    # base tunnel internal remote IPv4
-    cat >> "$SCRIPT_PATH" <<EOF
 
 # Base remote IPv4 inside tunnel /30
 REMOTE_IPV4_TUN="${REMOTE_IPV4_TUN}"
@@ -109,7 +118,6 @@ EOF
       done
     fi
 
-    # MASQUERADE
     cat >> "$SCRIPT_PATH" <<'EOF'
 
 # NAT for outgoing traffic (with comment for cleanup)
@@ -131,12 +139,12 @@ install_or_update_tunnel() {
   mkdir -p "$CONFIG_DIR"
 
   print_banner
-  echo -e "${BOLD}Install / Update tunnel${RESET}"
-  echo "------------------------"
+  echo -e "${BOLD}🚀 Install / Update tunnel${RESET}"
+  echo "----------------------------"
   echo
   echo "Which server is this?"
-  echo "  1) Foreign (Kharej) server"
-  echo "  2) Iran server"
+  echo "  1) 🌍🌐✅ Kharej (Foreign) server"
+  echo "  2) 🟢⚪️🔴 Iran server"
   read -rp "Choose your role [1-2]: " ROLE_CHOICE
 
   case "$ROLE_CHOICE" in
@@ -248,7 +256,7 @@ EOF
   read -rp "Do you want to reboot the server now? [y/N]: " REBOOT_ANSWER
   case "$REBOOT_ANSWER" in
     y|Y|yes|YES)
-      echo -e "${YELLOW}Rebooting server...${RESET}"
+      echo -e "${YELLOW}🔁 Rebooting server...${RESET}"
       reboot
       ;;
     *)
@@ -259,8 +267,8 @@ EOF
 
 status_tunnel() {
   print_banner
-  echo -e "${BOLD}Tunnel status${RESET}"
-  echo "--------------"
+  echo -e "${BOLD}🧪 Tunnel status${RESET}"
+  echo "-----------------"
   echo
 
   if systemctl list-unit-files | grep -q "^${SERVICE_NAME}"; then
@@ -297,8 +305,8 @@ status_tunnel() {
 
 add_ports_menu() {
   print_banner
-  echo -e "${BOLD}Add TCP ports (Iran server only)${RESET}"
-  echo "---------------------------------"
+  echo -e "${BOLD}➕ Add TCP ports (Iran server only)${RESET}"
+  echo "-------------------------------------"
   echo
 
   if [[ ! -f "$CONFIG_FILE" ]]; then
@@ -322,7 +330,6 @@ add_ports_menu() {
     return
   fi
 
-  # ثابت بر اساس طراحی تونل قبلی
   REMOTE_IPV4_TUN="192.168.13.1"
 
   echo "Tunnel internal remote IPv4: ${REMOTE_IPV4_TUN}"
@@ -353,7 +360,7 @@ add_ports_menu() {
       continue
     fi
 
-    # چک تکراری بودن روی iptables
+    # check duplicate in existing tunnel rules
     if iptables-save | grep -q "tunnel-setup" | grep -q -- "--dport ${PORT}"; then
       echo -e "${RED}${CROSS} Port ${PORT} is already used in an existing tunnel rule. Skipping.${RESET}"
       continue
@@ -361,11 +368,10 @@ add_ports_menu() {
 
     echo -e "${INFO} Adding DNAT rule for TCP port ${PORT} -> ${REMOTE_IPV4_TUN}"
 
-    # درجا روی iptables
     if iptables -t nat -A PREROUTING -p tcp --dport "${PORT}" -j DNAT --to-destination "${REMOTE_IPV4_TUN}" -m comment --comment "tunnel-setup" 2>/dev/null; then
       echo -e "${GREEN}${CHECK} Runtime rule added for port ${PORT}.${RESET}"
 
-      # و حالا افزوده شدن به اسکریپت برای پایداری بعد ریبوت
+      # append persistent rule to tunnel-setup.sh
       cat >> "$SCRIPT_PATH" <<EOF
 
 # Added later: TCP port ${PORT}
@@ -387,8 +393,8 @@ EOF
 
 uninstall_tunnel() {
   print_banner
-  echo -e "${BOLD}Uninstall tunnel${RESET}"
-  echo "-----------------"
+  echo -e "${BOLD}🧹 Uninstall tunnel${RESET}"
+  echo "---------------------"
   echo
   read -rp "Are you sure you want to remove the tunnel and service? [y/N]: " CONFIRM
   case "$CONFIRM" in
@@ -445,13 +451,13 @@ uninstall_tunnel() {
 
 print_menu() {
   echo "====================================="
-  echo "  IPv6 Tunnel Manager (sit + ipip6) "
+  echo "  🌐 IPv6 Tunnel Manager (sit+ipip6)"
   echo "====================================="
-  echo "1) Install / Update tunnel"
-  echo "2) Show tunnel status"
-  echo "3) Add TCP ports (Iran only)"
-  echo "4) Uninstall tunnel"
-  echo "5) Exit"
+  echo "  1) 🚀 Install / Update tunnel"
+  echo "  2) 🧪 Show tunnel status"
+  echo "  3) ➕ Add TCP ports (Iran only)"
+  echo "  4) 🧹 Uninstall tunnel"
+  echo "  5) ❌ Exit"
   echo
 }
 
@@ -468,7 +474,7 @@ main_menu() {
       4) uninstall_tunnel ;;
       5)
         echo
-        echo -e "${CHECK} Goodbye!${RESET}"
+        echo -e "${CHECK} Goodbye! 👋${RESET}"
         exit 0
         ;;
       *)
