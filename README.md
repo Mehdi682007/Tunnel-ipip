@@ -1,5 +1,4 @@
-# Tunnel-ipip
-تانل با سرعت بالا 
+# Tunnel-ipip 
 برای نصب اسکریپت رو کپی کنید 
 
 # Install
