@@ -41,6 +41,31 @@ detect_local_ip() {
   echo "$ip"
 }
 
+fix_dns_if_needed() {
+  local resolv="/etc/resolv.conf"
+
+  # اگر فایل وجود نداشت، کاری نکن
+  [[ ! -f "$resolv" ]] && return
+
+  # اگر 127.0.0.1 هست ولی 8.8.8.8 یا 1.1.1.1 نیست، فقط اون‌وقت دست بزن
+  if grep -qE '^\s*nameserver\s+127\.0\.0\.1' "$resolv" && \
+     ! grep -qE '^\s*nameserver\s+(8\.8\.8\.8|1\.1\.1\.1)' "$resolv"; then
+
+    echo -e "${INFO} Detected only 127.0.0.1 as DNS resolver. Adding a public fallback (8.8.8.8)..."
+
+    cp "$resolv" "${resolv}.tunnel-backup.$(date +%s)"
+
+    {
+      echo "nameserver 8.8.8.8"
+      echo "nameserver 1.1.1.1"
+      cat "$resolv"
+    } > "${resolv}.tmp" && mv "${resolv}.tmp" "$resolv"
+
+    echo -e "${CHECK} DNS fallback added to /etc/resolv.conf (backup: ${resolv}.tunnel-backup.*).${RESET}"
+  fi
+}
+
+
 print_banner() {
   clear
   echo -e "${MAGENTA}"
