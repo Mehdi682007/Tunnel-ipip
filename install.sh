@@ -191,7 +191,11 @@ install_or_update_tunnel() {
   esac
 
   echo "ROLE=${ROLE}" > "$CONFIG_FILE"
-
+  
+  if [[ "$ROLE" == "iran" ]]; then
+    fix_dns_if_needed
+  fi
+  
   echo
   read -rp "Tunnel ID (integer ≥ 1): " TID
   if ! [[ "$TID" =~ ^[0-9]+$ ]] || [[ "$TID" -lt 1 ]]; then
