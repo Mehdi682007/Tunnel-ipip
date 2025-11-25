@@ -377,13 +377,22 @@ status_tunnel() {
   echo
 
   if systemctl list-unit-files | grep -q "^${SERVICE_NAME}"; then
-    state=$(systemctl is-active "$SERVICE_NAME" 2>/dev/null || echo "unknown")
+    active_state=$(systemctl show -p ActiveState --value "$SERVICE_NAME" 2>/dev/null || echo "unknown")
+    result=$(systemctl show -p Result --value "$SERVICE_NAME" 2>/dev/null || echo "unknown")
     enabled=$(systemctl is-enabled "$SERVICE_NAME" 2>/dev/null || echo "disabled")
 
-    if [[ "$state" == "active" ]]; then
-      echo -e "Service: ${GREEN}ACTIVE${RESET} (${enabled}) ${CHECK}"
+    echo -n "Service: "
+
+    if [[ "$active_state" == "active" ]]; then
+      # اگر روزی Type رو simple کردی و سرویس در حال اجرا بود
+      echo -e "${GREEN}ACTIVE (running)${RESET} (${enabled}) ${CHECK}"
+    elif [[ "$active_state" == "inactive" && "$result" == "success" && "$enabled" == "enabled" ]]; then
+      # اسکریپت oneshot اجرا شده، موفق بوده، الان طبیعی‌ـه که inactive باشه
+      echo -e "${GREEN}INSTALLED (oneshot, last run OK)${RESET} (${enabled}) ${CHECK}"
+    elif [[ "$active_state" == "failed" || "$result" != "success" ]]; then
+      echo -e "${RED}FAILED${RESET} (state: ${active_state}, result: ${result}, ${enabled}) ${CROSS}"
     else
-      echo -e "Service: ${RED}${state^^}${RESET} (${enabled}) ${CROSS}"
+      echo -e "${YELLOW}${active_state^^}${RESET} (result: ${result}, ${enabled}) ${WARN}"
     fi
   else
     echo -e "${RED}${CROSS} Service ${SERVICE_NAME} is not installed.${RESET}"
@@ -407,6 +416,7 @@ status_tunnel() {
 
   pause
 }
+
 
 add_ports_menu() {
   print_banner
